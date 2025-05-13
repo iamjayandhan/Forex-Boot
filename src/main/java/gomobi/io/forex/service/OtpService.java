@@ -19,7 +19,7 @@ public class OtpService {
     private OtpRepository otpRepository;
 
     private static final long OTP_EXPIRATION_TIME = 10 * 60 * 1000; // 10 mins
-    private static final long OTP_COOLDOWN_TIME = 1 * 60 * 1000; // 5 mins
+    private static final long OTP_COOLDOWN_TIME = 1 * 60 * 1000; // 1 mins
 
     /**
      * Check if user can request OTP (must wait 1 minute after last request).

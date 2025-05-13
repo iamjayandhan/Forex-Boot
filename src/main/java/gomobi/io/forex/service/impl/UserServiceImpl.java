@@ -1,5 +1,6 @@
 package gomobi.io.forex.service.impl;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -178,5 +179,31 @@ public class UserServiceImpl implements UserService {
             return Optional.empty();
         }
     }
+    
+    @Override
+    public Optional<UserProfileDto> updateBalance(String email, BigDecimal amount, String operation) {
+        Optional<UserEntity> userOpt = userRepository.findByEmail(email);
 
+        if (userOpt.isPresent()) {
+            UserEntity user = userOpt.get();
+
+            if ("deposit".equalsIgnoreCase(operation)) {
+                user.setBalance(user.getBalance().add(amount));
+            } 
+            else if ("withdraw".equalsIgnoreCase(operation)) {
+                if (user.getBalance().compareTo(amount) >= 0) {
+                    user.setBalance(user.getBalance().subtract(amount));
+                } else {
+                    return Optional.empty(); // Not enough balance
+                }
+            } else {
+                return Optional.empty(); // Invalid operation
+            }
+
+            userRepository.save(user);
+            return Optional.of(new UserProfileDto(user));
+        }
+
+        return Optional.empty(); // User not found
+    }
 }

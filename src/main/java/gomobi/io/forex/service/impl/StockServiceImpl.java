@@ -4,10 +4,15 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import gomobi.io.forex.dto.StockDTO;
+import gomobi.io.forex.dto.UpdateStockDTO;
 import gomobi.io.forex.entity.StockEntity;
+import gomobi.io.forex.exception.ResourceNotFoundException;
 import gomobi.io.forex.repository.StockRepository;
 import gomobi.io.forex.service.StockService;
 
@@ -21,14 +26,28 @@ public class StockServiceImpl implements StockService {
         this.stockRepository = stockRepository;
     }
 
+    //first i check with stockDTO, if ok i will convert that into entity form and save it to DB.
+    // Method to create a stock from DTO
     @Override
-    public StockEntity createStock(StockEntity stock) {
-        return stockRepository.save(stock);
+    public StockEntity createStockFromDto(StockDTO stockDTO) {
+    	StockEntity stockEntity = mapDtoToEntity(stockDTO);  // Convert DTO to Entity
+    	return stockRepository.save(stockEntity); 
     }
-
+    
     @Override
     public List<StockEntity> getAllStocks() {
         return stockRepository.findAll();
+    }
+
+    @Override
+    public Page<StockEntity> getPaginatedStocks(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size); //pageable obj!
+
+        if (search != null && !search.isEmpty()) {
+            return stockRepository.findByNameContaining(search, pageable);  // Replace with your query method
+        } else {
+            return stockRepository.findAll(pageable); 
+        }
     }
 
     @Override
@@ -37,18 +56,18 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
-    public StockEntity updateStock(Long id, StockEntity stockDetails) {
+    public StockEntity partialUpdateStock(Long id, UpdateStockDTO dto) {
         StockEntity stock = stockRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Stock not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Stock not found"));
 
-        stock.setName(stockDetails.getName());
-        stock.setSymbol(stockDetails.getSymbol());
-        stock.setImageUrl(stockDetails.getImageUrl());
-        stock.setCurrentPrice(stockDetails.getCurrentPrice());
-        stock.setSector(stockDetails.getSector());
-        stock.setDescription(stockDetails.getDescription());
-        stock.setIpoQty(stockDetails.getIpoQty());
-        stock.setExchange(stockDetails.getExchange());
+        if (dto.getName() != null) stock.setName(dto.getName());
+        if (dto.getSymbol() != null) stock.setSymbol(dto.getSymbol());
+        if (dto.getImageUrl() != null) stock.setImageUrl(dto.getImageUrl());
+        if (dto.getCurrentPrice() != null) stock.setCurrentPrice(dto.getCurrentPrice());
+        if (dto.getSector() != null) stock.setSector(dto.getSector());
+        if (dto.getDescription() != null) stock.setDescription(dto.getDescription());
+        if (dto.getIpoQty() != null) stock.setIpoQty(dto.getIpoQty());
+        if (dto.getExchange() != null) stock.setExchange(dto.getExchange());
 
         return stockRepository.save(stock);
     }
@@ -58,27 +77,7 @@ public class StockServiceImpl implements StockService {
         stockRepository.deleteById(id);
     }
 
-    // Method to create a stock from DTO
-    @Override
-    public StockEntity createStockFromDto(StockDTO stockDTO) {
-        StockEntity stockEntity = mapDtoToEntity(stockDTO);  // Convert DTO to Entity
-        return stockRepository.save(stockEntity);  // Save entity to the database
-    }
-
-    // Method to update stock from DTO
-    @Override
-    public StockEntity updateStockFromDto(Long id, StockDTO stockDTO) {
-        StockEntity stock = stockRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Stock not found"));
-
-        // Convert DTO to Entity and update
-        StockEntity updatedStock = mapDtoToEntity(stockDTO);
-        updatedStock.setId(id);  // Ensure the ID remains unchanged during update
-
-        return stockRepository.save(updatedStock);  // Save the updated entity
-    }
-
-    // Helper method to convert DTO to Entity
+    // convert DTO to Entity - this is for create stock
     private StockEntity mapDtoToEntity(StockDTO stockDTO) {
         StockEntity entity = new StockEntity();
         entity.setName(stockDTO.getName());

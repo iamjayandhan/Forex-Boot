@@ -31,9 +31,9 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private CustomUserDetailsService customUserDetailsService;  // Inject CustomUserDetailsService
     
+    //helps to skip JWT validations!
     private static final Set<String> PUBLIC_PATHS = Set.of(
     	    "/api/auth/register"
-    	    // Add more public endpoints here as needed
     	);
 
     @Override
@@ -42,14 +42,14 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
     	//using authorization filter
-//        String authHeader = request.getHeader("Authorization");
-//
-//        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-//            filterChain.doFilter(request, response);
-//            return;
-//        }
-//
-//        String token = authHeader.substring(7);
+		//String authHeader = request.getHeader("Authorization");
+		//
+		//if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+		//    filterChain.doFilter(request, response);
+		//  	  return;
+		//    }
+		//
+		//String token = authHeader.substring(7);
     	
     	String path = request.getServletPath();
     	String token = null;

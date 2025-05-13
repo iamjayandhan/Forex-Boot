@@ -143,5 +143,12 @@ public class UserEntity {
     public void setMpin(String mpin) {
         this.mpin = mpin;
     }
-
+    
+    public BigDecimal getBalance() {
+    	return this.balance;
+    }
+    
+    public void setBalance(BigDecimal balance) {
+    	this.balance = balance;
+    }
 }

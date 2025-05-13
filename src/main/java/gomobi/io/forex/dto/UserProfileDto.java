@@ -1,5 +1,6 @@
 package gomobi.io.forex.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import gomobi.io.forex.entity.UserEntity;
@@ -12,6 +13,8 @@ public class UserProfileDto {
     private LocalDate dateOfBirth;
     private boolean isActive;
     private String role;
+    private String mpin;
+    private BigDecimal balance;
 
     public UserProfileDto(UserEntity user) {
         this.username = user.getUsername();
@@ -21,6 +24,8 @@ public class UserProfileDto {
         this.dateOfBirth = user.getDateOfBirth();
         this.isActive = user.isActive();
         this.role = user.getRole();
+        this.mpin = user.getMpin();
+        this.balance = user.getBalance();
     }
     
     public UserProfileDto(String fullName, String email,String mobileNumber, LocalDate dateOfBirth) {
@@ -85,5 +90,21 @@ public class UserProfileDto {
 
     public void setRole(String role) {
         this.role = role;
+    }
+    
+    public String getMpin() {
+        return mpin;
+    }
+
+    public void setMpin(String mpin) {
+        this.mpin = mpin;
+    }
+    
+    public BigDecimal getBalance() {
+    	return this.balance;
+    }
+    
+    public void setBalance(BigDecimal balance) {
+    	this.balance = balance;
     }
 }

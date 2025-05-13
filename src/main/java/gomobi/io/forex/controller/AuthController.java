@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import gomobi.io.forex.dto.BalanceUpdateRequestDTO;
 import gomobi.io.forex.dto.OTPRequestDTO;
 import gomobi.io.forex.dto.SuccessResponse;
 import gomobi.io.forex.dto.UserDTO;
@@ -248,6 +249,25 @@ public class AuthController {
         } else {
             ErrorResponse responseBody =
                     new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Failed to update user. Please check the provided data.");
+            return ResponseEntity.badRequest().body(responseBody);
+        }
+    }
+    
+    @PostMapping("/balance")
+    public ResponseEntity<?> updateUserBalance(@RequestBody BalanceUpdateRequestDTO request) {
+        Optional<UserProfileDto> result = userService.updateBalance(
+                request.getEmail(),
+                request.getAmount(),
+                request.getOperation()
+        );
+
+        if (result.isPresent()) {
+            SuccessResponse<Object> responseBody =
+                    new SuccessResponse<>(HttpStatus.OK.value(), "Balance updated successfully!", result.get());
+            return ResponseEntity.ok(responseBody);
+        } else {
+            ErrorResponse responseBody =
+                    new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Failed to update balance. Please check the operation or available balance.");
             return ResponseEntity.badRequest().body(responseBody);
         }
     }
