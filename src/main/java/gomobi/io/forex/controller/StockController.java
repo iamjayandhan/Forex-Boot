@@ -67,7 +67,7 @@ public class StockController {
         if (result.hasErrors()) {
             return handleValidationErrors(result);
         }
-
+        
         // Use the service to create stock from DTO
         StockEntity savedStock = stockService.createStockFromDto(stockDTO);
         

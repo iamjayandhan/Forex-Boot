@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import gomobi.io.forex.entity.UserEntity;
 
 public class UserProfileDto {
+	private Long id;
     private String username;
     private String fullName;
     private String email;
@@ -17,7 +18,8 @@ public class UserProfileDto {
     private BigDecimal balance;
 
     public UserProfileDto(UserEntity user) {
-        this.username = user.getUsername();
+    	this.id = user.getId();
+    	this.username = user.getUsername();
         this.fullName = user.getFullName();
         this.email = user.getEmail();
         this.mobileNumber = user.getMobileNumber();
@@ -35,7 +37,13 @@ public class UserProfileDto {
     	this.dateOfBirth = dateOfBirth;
     }
     
+    public UserProfileDto() {}
+    
     // Getters and Setters
+    public Long getUserId() {
+    	return id;
+    }
+    
     public String getUsername() {
         return username;
     }

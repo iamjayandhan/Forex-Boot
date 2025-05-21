@@ -1,6 +1,7 @@
 package gomobi.io.forex.service.impl;
 
 import java.util.List;
+
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import gomobi.io.forex.service.StockService;
 public class StockServiceImpl implements StockService {
 
     private final StockRepository stockRepository;
+//    private final HoldingRepository holdingRepository;
 
     @Autowired
     public StockServiceImpl(StockRepository stockRepository) {
@@ -49,6 +51,17 @@ public class StockServiceImpl implements StockService {
             return stockRepository.findAll(pageable); 
         }
     }
+    
+//    @Override
+//    public Page<HoldingEntity> getPaginatedHoldingsStocks(int page, int size, String search) {
+//        Pageable pageable = PageRequest.of(page, size); //pageable obj!
+//
+//        if (search != null && !search.isEmpty()) {
+//            return holdingRepository.findByNameContaining(search, pageable);
+//        } else {
+//            return holdingRepository.findAll(pageable); 
+//        }
+//    }
 
     @Override
     public Optional<StockEntity> getStockById(Long id) {

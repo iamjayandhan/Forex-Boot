@@ -106,18 +106,32 @@ public class PortfolioServiceImpl implements PortfolioService {
         BigDecimal totalCharges = brokerage.add(etc).add(stampDuty).add(ipf).add(sebiCharges).add(stt).add(gst);
         BigDecimal backendTotal = backendSubtotal.add(totalCharges).setScale(2, RoundingMode.HALF_EVEN);
 
-        // Cross check with frontend
-        if (backendSubtotal.compareTo(dto.getSubtotal()) != 0) {
-        	System.out.println("Subtotal mismatch: "+backendSubtotal+" : "+dto.getSubtotal());
+        // Cross check with frontend 
+        //i ignored this because it made 0.01 diff error mismatch
+//        if (backendSubtotal.compareTo(dto.getSubtotal()) != 0) {
+//        	System.out.println("Subtotal mismatch: Backend total "+backendSubtotal+" & Frontend total "+dto.getSubtotal());
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+//                    .body(new ErrorResponse(400, "Subtotal mismatch!"));
+//        }
+        BigDecimal difference = backendSubtotal.subtract(dto.getSubtotal()).abs();
+        if (difference.compareTo(new BigDecimal("0.01")) > 0) {
+            System.out.println("Subtotal mismatch: Backend total " + backendSubtotal + " & Frontend total " + dto.getSubtotal());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(400, "Subtotal mismatch!"));
         }
-
-        if (backendTotal.compareTo(dto.getTotalAmount()) != 0) {
-        	System.out.println("Total mismatch: "+backendTotal+" : "+dto.getTotalAmount());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse(400, "Total mismatch!"));
+        
+        difference = backendTotal.subtract(dto.getTotalAmount()).abs();
+        if(difference.compareTo(new BigDecimal("0.01")) > 0) {
+        	System.out.println("Total mismatch: Backend total "+ backendTotal + " & Frontend total " + dto.getTotalAmount());
+        	return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(400,"Total mismatch!"));
         }
+
+
+//        if (backendTotal.compareTo(dto.getTotalAmount()) != 0) {
+//        	System.out.println("Total mismatch: Backend total "+backendTotal+" : Frontend total "+dto.getTotalAmount());
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+//                    .body(new ErrorResponse(400, "Total mismatch!"));
+//        }
 
         if (dto.getBalance().compareTo(backendTotal) < 0) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -278,6 +292,8 @@ public class PortfolioServiceImpl implements PortfolioService {
         txn.setQuantity(dto.getQuantity());
         txn.setPricePerUnit(stock.getCurrentPrice());
         txn.setSubTotal(subTotal);
+        
+        //set charges info!
         txn.setBrokerage(brokerage);
         txn.setExchangeTxnCharges(etc);
         txn.setStampDuty(stampDuty);
