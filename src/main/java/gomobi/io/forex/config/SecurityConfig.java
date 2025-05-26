@@ -39,6 +39,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated() //[TEST]
                 .requestMatchers(HttpMethod.GET,"/api/auth/fetchAll").permitAll() //[TEST]
                 .requestMatchers(HttpMethod.GET, "/api/auth/**").authenticated()
+                .requestMatchers("/api/portfilio/**").authenticated()
+//                .requestMatchers("/api/stocks/**").authenticated()
                 .anyRequest().permitAll() // /api/otp/sendOTP
             )
             .csrf(csrf -> csrf.disable())

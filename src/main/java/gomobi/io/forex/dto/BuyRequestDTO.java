@@ -2,6 +2,9 @@ package gomobi.io.forex.dto;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class BuyRequestDTO {
     private String email;             
     private Long stockId;             

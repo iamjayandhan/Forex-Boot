@@ -1,5 +1,8 @@
 package gomobi.io.forex.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SellRequestDTO {
 	private String email;
 	private Long stockId;

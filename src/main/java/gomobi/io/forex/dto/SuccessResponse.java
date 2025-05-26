@@ -2,6 +2,7 @@ package gomobi.io.forex.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SuccessResponse<T> {
     private int status;
     private String message;

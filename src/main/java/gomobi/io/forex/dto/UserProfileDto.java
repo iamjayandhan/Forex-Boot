@@ -3,9 +3,13 @@ package gomobi.io.forex.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import gomobi.io.forex.entity.UserEntity;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserProfileDto {
+	//fields that are returned by /me endpoint
 	private Long id;
     private String username;
     private String fullName;
@@ -16,7 +20,14 @@ public class UserProfileDto {
     private String role;
     private String mpin;
     private BigDecimal balance;
+    
+    //register
+    private String password;
+    
+    //login
+    private String token;
 
+    // for /me endpoint
     public UserProfileDto(UserEntity user) {
     	this.id = user.getId();
     	this.username = user.getUsername();
@@ -30,11 +41,23 @@ public class UserProfileDto {
         this.balance = user.getBalance();
     }
     
+    // for updateUserDetails() method
     public UserProfileDto(String fullName, String email,String mobileNumber, LocalDate dateOfBirth) {
     	this.fullName = fullName;
     	this.email = email;
     	this.mobileNumber = mobileNumber;
     	this.dateOfBirth = dateOfBirth;
+    }
+    
+    // for register
+    public UserProfileDto(String username, String email, String password,String fullName, String mobileNumber, LocalDate dateOfBirth, String mpin) {
+    	this.username = username;
+    	this.email = email;
+    	this.password = password;
+    	this.fullName = fullName;
+    	this.mobileNumber = mobileNumber;
+    	this.dateOfBirth = dateOfBirth;
+    	this.mpin = mpin;
     }
     
     public UserProfileDto() {}
@@ -114,5 +137,21 @@ public class UserProfileDto {
     
     public void setBalance(BigDecimal balance) {
     	this.balance = balance;
+    }
+    
+    public String getPassword() {
+    	return password;
+    }
+    
+    public void setPassword(String password) {
+    	this.password = password;
+    }
+    
+    public String getToken() {
+    	return token;
+    }
+    
+    public void getToken(String token) {
+    	this.token = token;
     }
 }

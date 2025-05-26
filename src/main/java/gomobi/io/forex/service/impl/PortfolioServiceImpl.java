@@ -1,13 +1,18 @@
 package gomobi.io.forex.service.impl;
 
 import java.math.BigDecimal;
-
 import java.math.RoundingMode;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -396,10 +401,54 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
     
     @Override
-    public ResponseEntity<?> getUserPortfolio(Long userId){
-    	
-    	SuccessResponse<Object> responseBody = new SuccessResponse<>(HttpStatus.OK.value(),"Portfolio fetched successfully");
-    	return ResponseEntity.status(HttpStatus.OK).body(responseBody);
-    }
+    public ResponseEntity<?> getUserTransactionsPaginated(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
+        Page<TransactionEntity> transactionsPage = transactionRepository.findByUserId(userId, pageable);
 
+        List<TransactionResponseDTO> transactionDTOs = transactionsPage.getContent().stream()
+                .map(transaction -> {
+                    TransactionResponseDTO dto = new TransactionResponseDTO();
+                    dto.setId(transaction.getId());
+                    dto.setTransactionType(transaction.getTransactionType());
+                    dto.setQuantity(transaction.getQuantity());
+                    dto.setPricePerUnit(transaction.getPricePerUnit());
+                    dto.setSubTotal(transaction.getSubTotal());
+                    dto.setTotalAmount(transaction.getTotalAmount());
+                    dto.setTimestamp(transaction.getTimestamp());
+
+                    // Charges
+                    dto.setBrokerage(transaction.getBrokerage());
+                    dto.setExchangeTxnCharges(transaction.getExchangeTxnCharges());
+                    dto.setStampDuty(transaction.getStampDuty());
+                    dto.setIpft(transaction.getIpft());
+                    dto.setSebiCharges(transaction.getSebiCharges());
+                    dto.setStt(transaction.getStt());
+                    dto.setGst(transaction.getGst());
+
+                    // Stock info
+                    StockEntity stock = transaction.getStock();
+                    StockInfoDTO stockDto = new StockInfoDTO();
+                    stockDto.setName(stock.getName());
+                    stockDto.setSymbol(stock.getSymbol());
+                    stockDto.setImageUrl(stock.getImageUrl());
+                    stockDto.setCurrentPrice(stock.getCurrentPrice());
+                    stockDto.setSector(stock.getSector());
+
+                    dto.setStock(stockDto);
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        // Create response with pagination metadata
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("transactions", transactionDTOs);
+        responseBody.put("currentPage", transactionsPage.getNumber());
+        responseBody.put("totalItems", transactionsPage.getTotalElements());
+        responseBody.put("totalPages", transactionsPage.getTotalPages());
+        responseBody.put("pageSize", transactionsPage.getSize());
+
+        SuccessResponse<Object> successResponse = new SuccessResponse<>(HttpStatus.OK.value(), "Transactions fetched successfully", responseBody);
+        return ResponseEntity.ok(successResponse);
+    }
 }

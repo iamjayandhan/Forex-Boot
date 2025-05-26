@@ -12,6 +12,5 @@ public interface PortfolioService {
     
     ResponseEntity<?> getUserHoldings(Long userId);
     ResponseEntity<?> getUserTransactions(Long userId);
-    
-    ResponseEntity<?> getUserPortfolio(Long userId);
+    ResponseEntity<?> getUserTransactionsPaginated(Long userId, int page, int size);
 }

@@ -1,5 +1,8 @@
 package gomobi.io.forex.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OTPRequestDTO {
     private String email;
     private String otp;

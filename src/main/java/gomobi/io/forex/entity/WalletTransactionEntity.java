@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+import gomobi.io.forex.enums.TransactionReason;
 import gomobi.io.forex.enums.TransactionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,6 +34,10 @@ public class WalletTransactionEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TransactionType transactionType; // DEPOSIT or WITHDRAW
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TransactionReason transactionReason; // STOCK_PURCHASE / STOCK_SELL / BONUS / REFUND / MAINTENANCE 
     
     @Column(nullable = false,precision = 19, scale = 4)
     private BigDecimal amount;
@@ -71,6 +76,14 @@ public class WalletTransactionEntity {
     
     public void setTransactionType(TransactionType transactionType) {
     	this.transactionType = transactionType;
+    }
+    
+    public TransactionReason getTransactionReason() {
+    	return transactionReason;
+    }
+    
+    public void setTransactionReason(TransactionReason transactionReason) {
+    	this.transactionReason = transactionReason;
     }
     
     public BigDecimal getAmount() {

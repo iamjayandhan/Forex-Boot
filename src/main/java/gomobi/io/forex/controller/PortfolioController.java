@@ -22,8 +22,7 @@ import gomobi.io.forex.dto.PageResponse;
 import gomobi.io.forex.dto.SellRequestDTO;
 import gomobi.io.forex.dto.StockInfoDTO;
 import gomobi.io.forex.dto.SuccessResponse;
-import gomobi.io.forex.dto.WalletTransactionRequestDTO;
-import gomobi.io.forex.dto.WalletTransactionResponseDTO;
+import gomobi.io.forex.dto.WalletTransactionDTO;
 import gomobi.io.forex.entity.HoldingEntity;
 import gomobi.io.forex.entity.WalletTransactionEntity;
 import gomobi.io.forex.exception.ErrorResponse;
@@ -46,7 +45,7 @@ public class PortfolioController {
     
     @Autowired
     private WalletTransactionService walletTransactionService;
-    
+        
     private final UserRepository userRepository;
     
     @Autowired
@@ -54,12 +53,6 @@ public class PortfolioController {
     	this.userRepository = userRepository;
     }
     
-    //portfolio endpoint! heart of the application!
-    @GetMapping("/{userId}")
-    public ResponseEntity<?> getPortfolio(@PathVariable Long userId){
-    	return portfolioService.getUserPortfolio(userId);
-    }
-
     //Buy Stock
     @PostMapping("/buy")
     public ResponseEntity<?> buyStock(@RequestBody BuyRequestDTO buyRequest) {
@@ -131,10 +124,21 @@ public class PortfolioController {
     public ResponseEntity<?> getUserTransactions(@PathVariable Long userId) {
         return portfolioService.getUserTransactions(userId);
     }
+    
+    //Get paginated transactions
+    @GetMapping("/transactions/paginated")
+    public ResponseEntity<?> getUserTransactionsPaginated(
+    		@RequestParam int page,
+    		@RequestParam int size,
+    		@RequestParam Long userId){
+    	 return portfolioService.getUserTransactionsPaginated(userId,page,size);
+    }
+    
 
     //for the wallet transactions
+    //save a wallet transaction!
     @PostMapping("/wallet")
-    public ResponseEntity<?> saveWalletTransaction(@RequestBody WalletTransactionRequestDTO requestDTO){
+    public ResponseEntity<?> saveWalletTransaction(@RequestBody WalletTransactionDTO requestDTO){
     	//validate user
     	if (!userRepository.existsById(requestDTO.getUserId())) {
     		ErrorResponse responseBody = new ErrorResponse(HttpStatus.BAD_REQUEST.value(),"User not found");
@@ -155,6 +159,7 @@ public class PortfolioController {
     	return walletTransactionService.saveTransaction(requestDTO);
     }
     
+    //get wallet transactions of a user.
     @GetMapping("/wallet/{userId}")
     public ResponseEntity<?> getTransactionsByUser(@PathVariable Long userId) {
     	
@@ -166,11 +171,12 @@ public class PortfolioController {
     	
         List<WalletTransactionEntity> transactions = walletTransactionService.getTransactionsByUserId(userId);
         
-        List<WalletTransactionResponseDTO> dtoList = transactions.stream()
-        		.map(txn -> new WalletTransactionResponseDTO(
+        List<WalletTransactionDTO> dtoList = transactions.stream()
+        		.map(txn -> new WalletTransactionDTO(
         				txn.getId(),
         				txn.getUser().getId(),
         				txn.getTransactionType(),
+        				txn.getTransactionReason(),
         				txn.getAmount(),
         				txn.getBalance(),
         				txn.getTimestamp()
@@ -179,6 +185,14 @@ public class PortfolioController {
         
         SuccessResponse<Object> responseBody = new SuccessResponse<>(HttpStatus.OK.value(),"Wallet Transactions fetched successfully.",dtoList);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(responseBody);
+    }
+    
+    @GetMapping("/wallet/paginated")
+    public ResponseEntity<?> getWalletTransactionsByUser(@RequestParam int page,
+	            @RequestParam int size,
+	            @RequestParam Long userId){
+    	
+    	return walletTransactionService.getWalletTransactionsPaginated(userId, page, size);
     }
 
 }

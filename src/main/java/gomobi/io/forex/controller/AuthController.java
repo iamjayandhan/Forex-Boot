@@ -29,8 +29,8 @@ import gomobi.io.forex.dto.UserResponseDTO;
 import gomobi.io.forex.entity.UserEntity;
 import gomobi.io.forex.exception.ErrorResponse;
 import gomobi.io.forex.repository.UserRepository;
-import gomobi.io.forex.service.OtpService;
 import gomobi.io.forex.service.UserService;
+import gomobi.io.forex.service.impl.OtpServiceImpl;
 import gomobi.io.forex.util.MailUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -49,7 +49,7 @@ public class AuthController {
     private MailUtil mailUtil;
     
     @Autowired
-    private OtpService otpService;
+    private OtpServiceImpl otpService;
     
     // Constructor for UserService dependency injection
     public AuthController(UserService userService) {

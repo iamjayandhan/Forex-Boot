@@ -136,29 +136,7 @@ public class UserServiceImpl implements UserService {
         String passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,}$";
         return password != null && password.matches(passwordRegex);
     }
-//    
-//    @Override
-//    public boolean updateUserDetails(String email, String fullName, String mobileNumber, LocalDate dateOfBirth) {
-//        Optional<UserEntity> optionalUser = userRepository.findByEmail(email);
-//        if (optionalUser.isPresent()) {
-//            UserEntity user = optionalUser.get();
-//            
-//            System.out.println("User found: " + user.getEmail());
-//
-//
-//            if (fullName != null) user.setFullName(fullName);
-//            if (mobileNumber != null) user.setMobileNumber(mobileNumber);
-//            if (dateOfBirth != null) user.setDateOfBirth(dateOfBirth);
-//
-//            userRepository.save(user);
-//
-//            return true;
-//        }
-//        else {
-//        	System.out.println("User not found: "+email);
-//        	return false;
-//        }
-//    }
+
     @Override
     public Optional<?> updateUserDetails(String email, String fullName, String mobileNumber, LocalDate dateOfBirth) {
         Optional<UserEntity> optionalUser = userRepository.findByEmail(email);
@@ -172,7 +150,6 @@ public class UserServiceImpl implements UserService {
 
             userRepository.save(user);
 
-            // Build DTO from known updated data
             UserProfileDto updatedDto = new UserProfileDto(email, fullName, mobileNumber, dateOfBirth);
             return Optional.of(updatedDto);
         } else {

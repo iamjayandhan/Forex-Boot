@@ -2,19 +2,14 @@ package gomobi.io.forex.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+//only for the login 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponseDTO {
     private String username;
     private String email;
     private String fullName;
     private String token;
-
-    public UserResponseDTO(String username, String email, String fullName) {
-        this.username = username;
-        this.email = email;
-        this.fullName = fullName;
-    }
-
+    
     public UserResponseDTO(String username, String email, String fullName, String token) {
         this.username = username;
         this.email = email;

@@ -46,7 +46,8 @@ public class StockServiceImpl implements StockService {
         Pageable pageable = PageRequest.of(page, size); //pageable obj!
 
         if (search != null && !search.isEmpty()) {
-            return stockRepository.findByNameContaining(search, pageable);  // Replace with your query method
+//            return stockRepository.findByNameContaining(search, pageable);
+        	return stockRepository.searchAllFields(search, pageable);
         } else {
             return stockRepository.findAll(pageable); 
         }
