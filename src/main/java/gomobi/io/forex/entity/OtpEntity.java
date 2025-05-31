@@ -1,8 +1,15 @@
 package gomobi.io.forex.entity;
 
-import jakarta.persistence.*;
-
 import java.sql.Timestamp;
+
+import gomobi.io.forex.enums.OtpPurpose;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "otps")
@@ -17,8 +24,10 @@ public class OtpEntity {
     private Timestamp timestamp;
 
     private Boolean verified = false;
-
     private Timestamp expiresAt;
+    
+    @Enumerated(EnumType.STRING)
+    private OtpPurpose purpose;
 
     // Getters and Setters
 
@@ -68,5 +77,13 @@ public class OtpEntity {
 
     public void setExpiresAt(Timestamp expiresAt) {
         this.expiresAt = expiresAt;
+    }
+    
+    public OtpPurpose getPurpose() {
+    	return purpose;
+    }
+    
+    public void setPurpose(OtpPurpose purpose) {
+    	this.purpose = purpose;
     }
 }

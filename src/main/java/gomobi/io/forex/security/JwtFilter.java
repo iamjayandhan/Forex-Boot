@@ -133,7 +133,7 @@ public class JwtFilter extends OncePerRequestFilter {
         	if (!path.equals("/api/auth/login")) {
         	    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         	    response.setContentType("application/json");
-        	    response.setCharacterEncoding("UTF-8"); // ✅ optional but good practice
+        	    response.setCharacterEncoding("UTF-8");
 
         	    Map<String, String> errorMap = new HashMap<>();
         	    errorMap.put("error", "Token has expired");

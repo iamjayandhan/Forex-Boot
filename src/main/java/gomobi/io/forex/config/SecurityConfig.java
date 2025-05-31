@@ -34,13 +34,21 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.GET,"/api/auth/fetchAll").permitAll() //[TEST]
+
+                .requestMatchers(HttpMethod.POST, "/api/stocks").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/api/stocks").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/stocks").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/stocks/paginated").authenticated()
+                
+                .requestMatchers(HttpMethod.GET, "/api/stocks").authenticated()
                 .requestMatchers(HttpMethod.POST,"/api/auth/logout").authenticated()
                 .requestMatchers(HttpMethod.POST,"/api/auth/update").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated() //[TEST]
-                .requestMatchers(HttpMethod.GET,"/api/auth/fetchAll").permitAll() //[TEST]
                 .requestMatchers(HttpMethod.GET, "/api/auth/**").authenticated()
+                
                 .requestMatchers("/api/portfilio/**").authenticated()
-//                .requestMatchers("/api/stocks/**").authenticated()
+                //.requestMatchers("/api/stocks/**").authenticated()
                 .anyRequest().permitAll() // /api/otp/sendOTP
             )
             .csrf(csrf -> csrf.disable())

@@ -11,7 +11,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 public class UserDTO {
 
-	//instead of class validations using if statements...
+	//instead of validations using if statements...
 	//i used annotation based validations...!
     @NotBlank(message = "Username is required")
     private String username;

@@ -21,10 +21,7 @@ import gomobi.io.forex.dto.SuccessResponse;
 import gomobi.io.forex.dto.UserProfileDto;
 import gomobi.io.forex.dto.UserResponseDTO;
 import gomobi.io.forex.entity.UserEntity;
-import gomobi.io.forex.exception.DuplicateEmailException;
-import gomobi.io.forex.exception.DuplicateUsernameException;
-import gomobi.io.forex.exception.InvalidCredentialsException;
-import gomobi.io.forex.exception.WeakPasswordException;
+import gomobi.io.forex.exception.CustomExceptions;
 import gomobi.io.forex.repository.UserRepository;
 import gomobi.io.forex.security.JwtUtil;
 import gomobi.io.forex.service.UserService;
@@ -55,15 +52,15 @@ public class UserServiceImpl implements UserService {
     public UserEntity registerUser(UserEntity user) {
  
         if (userRepository.existsByEmail(user.getEmail())) {
-        	 throw new DuplicateEmailException("Email already registered.");        
+        	 throw new CustomExceptions.DuplicateEmailException("Email already registered.");        
         }
 
         if (userRepository.existsByUsername(user.getUsername())) {
-            throw new DuplicateUsernameException("Username already taken.");
+            throw new CustomExceptions.DuplicateUsernameException("Username already taken.");
         }
         
         if (!isValidPassword(user.getPassword())) {
-            throw new WeakPasswordException("Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character.");
+            throw new CustomExceptions.WeakPasswordException("Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character.");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -80,10 +77,10 @@ public class UserServiceImpl implements UserService {
         // Authenticate
     	System.out.println(email+" "+password);
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid username or email"));
+                .orElseThrow(() -> new CustomExceptions.InvalidCredentialsException("Invalid username or email"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new InvalidCredentialsException("Invalid credentials");
+            throw new CustomExceptions.InvalidCredentialsException("Invalid credentials");
         }
 
         Authentication authentication = authManager.authenticate(
@@ -108,29 +105,44 @@ public class UserServiceImpl implements UserService {
 
         // Set the token as a cookie
         Cookie cookie = new Cookie("auth_token", token);
-        cookie.setHttpOnly(true);  // Ensure it's not accessible by JavaScript
-        cookie.setSecure(true);     // Set to true in production (ensure the use of HTTPS)
+        cookie.setHttpOnly(true);  //not accessible by JavaScript
+        cookie.setSecure(true);    // Set to true in production (ensure the use of HTTPS)
         cookie.setPath("/");       // Make it available throughout the domain
-        cookie.setMaxAge(60 * 60);   // Set the cookie expiration (3600 sec = 1hr)
+        cookie.setMaxAge(60 * 60); // Set the cookie expiration (3600 sec = 1hr)
 
         // Add the cookie to the response
         response.addCookie(cookie);
+        
+        // Add the cookie to the response
+        response.setHeader("Authorization", "Bearer " + token);
 
         return successResponse;
     }
     
-    public boolean updateUserPassword(String email, String newPassword) {
+    public String updateUserPassword(String email, String newPassword) {
         Optional<UserEntity> optionalUser = userRepository.findByEmail(email);
 
         if (optionalUser.isPresent()) {
             UserEntity user = optionalUser.get();
+            String oldPassword = user.getPassword();
+
+            // Just for debug (but this can be misleading)
+            System.out.println("Old (hashed): " + oldPassword);
+            System.out.println("New (raw): " + newPassword);
+
+            if (passwordEncoder.matches(newPassword, oldPassword)) {
+                // New password is same as old password
+                return "Duplicate";
+            }
+
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
-            return true;
+            return "Success";
         } else {
-            return false;
+            return "Failure";
         }
     }
+
     
     private static boolean isValidPassword(String password) {
         String passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,}$";

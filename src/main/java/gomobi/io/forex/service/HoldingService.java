@@ -1,12 +1,10 @@
 package gomobi.io.forex.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import gomobi.io.forex.entity.HoldingEntity;
 
 public interface HoldingService {
-	Page<HoldingEntity> getPaginatedHoldingsByUserId(Long userId, int page, int size);
-	
-	//for admin only!
-	Page<HoldingEntity> getPaginatedHoldings(int page, int size);
+	Page<HoldingEntity> getHoldingsByUserId(Long userId, Pageable pageable);
 }

@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +28,7 @@ import gomobi.io.forex.dto.UserDTO;
 import gomobi.io.forex.dto.UserProfileDto;
 import gomobi.io.forex.dto.UserResponseDTO;
 import gomobi.io.forex.entity.UserEntity;
+import gomobi.io.forex.enums.OtpPurpose;
 import gomobi.io.forex.exception.ErrorResponse;
 import gomobi.io.forex.repository.UserRepository;
 import gomobi.io.forex.service.UserService;
@@ -45,7 +47,7 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
+    @Autowired	
     private MailUtil mailUtil;
     
     @Autowired
@@ -117,7 +119,7 @@ public class AuthController {
         // Create a cookie with the same name and set max age to 0 to delete it
         Cookie cookie = new Cookie("auth_token", null);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true); // Set true if using HTTPS
+        //cookie.setSecure(true); // Set true if using HTTPS
         cookie.setPath("/");    // Must match the path used when the cookie was set
         cookie.setMaxAge(0);    // This deletes the cookie
 
@@ -150,7 +152,7 @@ public class AuthController {
 
         String otp = otpService.generateOtp();
 
-        otpService.storeOtp(email, otp);
+        otpService.storeOtp(email, otp,OtpPurpose.FORGOT_PASSWORD);
 
         System.out.println("Generate Email: " + email);
         System.out.println("Generate OTP: " + otp);
@@ -179,7 +181,7 @@ public class AuthController {
                     .body(new ErrorResponse(HttpStatus.NOT_FOUND.value(), "Email does not exist."));
         }
         
-        boolean result = otpService.verifyOtp(email, inputOtp);
+        boolean result = otpService.verifyOtp(email, inputOtp,OtpPurpose.FORGOT_PASSWORD);
 
         if (!result) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -215,16 +217,70 @@ public class AuthController {
         }
 
         // Proceed with password reset if OTP is verified
-        boolean passwordUpdated = userService.updateUserPassword(email, newPassword);
+        String passwordUpdated = userService.updateUserPassword(email, newPassword);
 
-        if (passwordUpdated) {
+        if (passwordUpdated == "Success") {
             otpService.clearOtp(email);  // Clear OTP after successful password reset
             return ResponseEntity.ok(new SuccessResponse<>(HttpStatus.OK.value(), "Password reset successful."));
+        } else if(passwordUpdated == "Duplicate") {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "New password cannot be the old password."));
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to reset password."));
         }
     }
+    
+    //for email verification
+    @PostMapping("/sendEmailVerificationOtp")
+    public ResponseEntity<?> sendEmailVerificationOtp(@RequestBody OTPRequestDTO request) {
+        String email = request.getEmail();
+
+        if (email == null || email.isEmpty() || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid email format."));
+        }
+
+        if (!otpService.canSendOtp(email)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ErrorResponse(HttpStatus.TOO_MANY_REQUESTS.value(), "Please wait before generating a new OTP."));
+        }
+
+        String otp = otpService.generateOtp();
+        otpService.storeOtp(email, otp, OtpPurpose.VERIFY_EMAIL);
+
+        System.out.println("Generate Email: " + email);
+        System.out.println("Generate OTP: " + otp);
+
+        boolean sent = mailUtil.sendOtpEmail(email, otp);
+        if (!sent) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to send OTP. Please try again."));
+        }
+
+        return ResponseEntity.ok(new SuccessResponse<>(HttpStatus.OK.value(), "OTP has been sent for email verification."));
+    }
+    
+    @PostMapping("/verifyEmailVerificationOtp")
+    public ResponseEntity<?> verifyEmailVerificationOtp(@RequestBody OTPRequestDTO request) {
+        String email = request.getEmail();
+        String inputOtp = request.getOtp();
+
+        if (email == null || email.isEmpty() || inputOtp == null || inputOtp.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Email or OTP is empty."));
+        }
+
+        boolean result = otpService.verifyOtp(email, inputOtp, OtpPurpose.VERIFY_EMAIL);
+
+        if (!result) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), "Invalid or expired OTP."));
+        }
+
+        return ResponseEntity.ok(new SuccessResponse<>(HttpStatus.OK.value(), "Email verified successfully."));
+    }
+
     
     @CrossOrigin(origins="http://localhost:5500")
     @GetMapping("/fetchAll")

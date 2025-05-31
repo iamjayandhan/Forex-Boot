@@ -6,6 +6,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -26,6 +29,7 @@ import gomobi.io.forex.dto.SuccessResponse;
 import gomobi.io.forex.dto.UpdateStockDTO;
 import gomobi.io.forex.entity.StockEntity;
 import gomobi.io.forex.exception.ErrorResponse;
+import gomobi.io.forex.repository.HoldingRepository;
 import gomobi.io.forex.service.StockService;
 import jakarta.validation.Valid;
 
@@ -34,10 +38,13 @@ import jakarta.validation.Valid;
 public class StockController {
 
     private final StockService stockService;
+    
+    private final HoldingRepository holdingRespository;
 
     @Autowired
-    public StockController(StockService stockService) {
+    public StockController(StockService stockService, HoldingRepository holdingRespository) {
         this.stockService = stockService;
+        this.holdingRespository = holdingRespository;
     }
     
     @GetMapping
@@ -47,20 +54,37 @@ public class StockController {
     	return ResponseEntity.status(HttpStatus.OK).body(responseBody);
     }
     
-    @GetMapping("/paginated")
-    public ResponseEntity<?> getPaginatedStocks(@RequestParam int page, @RequestParam int size, @RequestParam(required = false) String search) {
-        // Fetch stocks with pagination, this is an example, you can replace with your actual service logic
-        Page<StockEntity> stockPage = stockService.getPaginatedStocks(page, size, search);
-
-        // Wrap the content and total elements inside a PageResponse
-        PageResponse<StockEntity> pageResponse = new PageResponse<>(stockPage.getContent(), stockPage.getTotalElements());
-
-        // Return the paginated response inside a SuccessResponse
-        SuccessResponse<PageResponse<StockEntity>> responseBody = new SuccessResponse<>(HttpStatus.OK.value(), "Stocks fetched successfully!", pageResponse);
-
-        return ResponseEntity.status(HttpStatus.OK).body(responseBody);
+    @GetMapping("/sectors")
+    public ResponseEntity<?> getAllSectors(){
+    	List<String> sectors = stockService.getAllSectors();
+    	SuccessResponse<Object> responseBody = new SuccessResponse<>(HttpStatus.OK.value(),"All sectors are fetched successfully!",sectors);
+    	return ResponseEntity.status(HttpStatus.OK).body(responseBody);
     }
-
+    
+	  @GetMapping("/paginated")
+	  public ResponseEntity<?> getPaginatedStocks(
+			  @RequestParam int page, 
+			  @RequestParam int size, 
+			  @RequestParam(required = false) String search,
+			  @RequestParam(defaultValue = "id") String sortBy,
+			  @RequestParam(defaultValue = "asc") String sortOrder,
+			  @RequestParam(required = false) String sector,
+			  @RequestParam(required = false) String exchange
+		  ) {
+		  
+		  Sort sort = sortOrder.equalsIgnoreCase("asc")? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+		  Pageable pageable = PageRequest.of(page, size,sort);
+		  
+	      Page<StockEntity> stockPage = stockService.getPaginatedStocks(pageable, search,sector, exchange);
+	
+	      // Wrap the content and total elements inside a PageResponse
+	      PageResponse<StockEntity> pageResponse = new PageResponse<>(stockPage.getContent(), stockPage.getTotalElements());
+	
+	      // Return the paginated response inside a SuccessResponse
+	      SuccessResponse<PageResponse<StockEntity>> responseBody = new SuccessResponse<>(HttpStatus.OK.value(), "Stocks fetched successfully!", pageResponse);
+	
+	      return ResponseEntity.status(HttpStatus.OK).body(responseBody);
+	  }
 
     @PostMapping
     public ResponseEntity<?> createStock(@Valid @RequestBody StockDTO stockDTO, BindingResult result) {
@@ -89,6 +113,7 @@ public class StockController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateStock(@PathVariable Long id,
                                          @Valid @RequestBody UpdateStockDTO stockDTO) {
+    	
         // Use the service to update stock from DTO
         StockEntity updatedStock = stockService.partialUpdateStock(id, stockDTO);
         SuccessResponse<Object> responseBody = new SuccessResponse<>(HttpStatus.OK.value(), "Stock updated successfully", updatedStock);
@@ -97,6 +122,12 @@ public class StockController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteStock(@PathVariable Long id) {
+    	
+    	//check if the stock is holded by any investors
+    	if(holdingRespository.existsByStockId(id)) {
+    		ErrorResponse responseBody = new ErrorResponse(HttpStatus.BAD_REQUEST.value(),"Some Investors hold that stock currently. Cannot perform deletion operation.");
+    		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
+    	}
     	
     	Optional<StockEntity> stockOptional = stockService.getStockById(id);
     	

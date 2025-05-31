@@ -88,12 +88,4 @@ public class WalletTransactionServiceImpl implements WalletTransactionService{
         SuccessResponse<Object> requestBody = new SuccessResponse<>(HttpStatus.OK.value(),"User wallet transactions fetched successfully",responseData);
         return ResponseEntity.status(HttpStatus.OK).body(requestBody);
 	}
-	
-	//to find the whole deposit amount!
-//	@Override
-//	public BigDecimal getTotalAmountByUser(UserEntity user) {
-//		return walletTransactionRepository.findByUser(user).stream()
-//				.map(tx -> tx.getTransactionType().name().equals("DEPOSIT") ? tx.getAmount() : tx.getAmount().negate())
-//				.reduce(BigDecimal.ZERO, BigDecimal::add);
-//	}
 }

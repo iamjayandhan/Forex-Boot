@@ -1,19 +1,18 @@
 package gomobi.io.forex.service.impl;
 
 import java.util.List;
-
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import gomobi.io.forex.dto.StockDTO;
 import gomobi.io.forex.dto.UpdateStockDTO;
 import gomobi.io.forex.entity.StockEntity;
-import gomobi.io.forex.exception.ResourceNotFoundException;
+import gomobi.io.forex.exception.CustomExceptions;
 import gomobi.io.forex.repository.StockRepository;
 import gomobi.io.forex.service.StockService;
 
@@ -42,16 +41,23 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
-    public Page<StockEntity> getPaginatedStocks(int page, int size, String search) {
-        Pageable pageable = PageRequest.of(page, size); //pageable obj!
-
-        if (search != null && !search.isEmpty()) {
-//            return stockRepository.findByNameContaining(search, pageable);
-        	return stockRepository.searchAllFields(search, pageable);
-        } else {
-            return stockRepository.findAll(pageable); 
-        }
+    public List<String> getAllSectors(){
+    	return stockRepository.findAllDistinctSectors();
     }
+    
+    @Override
+    public Page<StockEntity> getPaginatedStocks(Pageable pageable, String search, String sector, String exchange) {
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        boolean hasSector = sector != null && !sector.trim().isEmpty();
+        boolean hasExchange = exchange != null && !exchange.trim().isEmpty();
+
+        if (hasSearch || hasSector || hasExchange) {
+            return stockRepository.searchWithFilters(search, sector, exchange, pageable);
+        }
+
+        return stockRepository.findAll(pageable);
+    }
+
     
 //    @Override
 //    public Page<HoldingEntity> getPaginatedHoldingsStocks(int page, int size, String search) {
@@ -69,15 +75,19 @@ public class StockServiceImpl implements StockService {
         return stockRepository.findById(id);
     }
 
+    @Transactional
     @Override
     public StockEntity partialUpdateStock(Long id, UpdateStockDTO dto) {
         StockEntity stock = stockRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found"));
+                .orElseThrow(() -> new CustomExceptions.ResourceNotFoundException("Stock not found"));
 
         if (dto.getName() != null) stock.setName(dto.getName());
         if (dto.getSymbol() != null) stock.setSymbol(dto.getSymbol());
         if (dto.getImageUrl() != null) stock.setImageUrl(dto.getImageUrl());
-        if (dto.getCurrentPrice() != null) stock.setCurrentPrice(dto.getCurrentPrice());
+        if (dto.getCurrentPrice() != null) {
+            System.out.println("Updating price to: " + dto.getCurrentPrice());
+            stock.setCurrentPrice(dto.getCurrentPrice());
+        }
         if (dto.getSector() != null) stock.setSector(dto.getSector());
         if (dto.getDescription() != null) stock.setDescription(dto.getDescription());
         if (dto.getIpoQty() != null) stock.setIpoQty(dto.getIpoQty());
@@ -86,6 +96,7 @@ public class StockServiceImpl implements StockService {
         return stockRepository.save(stock);
     }
 
+    @Transactional
     @Override
     public void deleteStock(Long id) {
         stockRepository.deleteById(id);

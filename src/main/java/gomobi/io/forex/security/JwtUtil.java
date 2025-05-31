@@ -2,6 +2,7 @@ package gomobi.io.forex.security;
 
 import java.util.Date;
 
+
 // A cryptographic key used in symmetric algorithms like HMAC
 import javax.crypto.SecretKey; //symmetric encryption key!
 

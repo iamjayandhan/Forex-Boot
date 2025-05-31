@@ -2,6 +2,10 @@ package gomobi.io.forex.service.impl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -350,60 +354,97 @@ public class PortfolioServiceImpl implements PortfolioService {
         return ResponseEntity.status(HttpStatus.OK).body(responseBody);
     }
 
-    @Override
-    public ResponseEntity<?> getUserTransactions(Long userId) {
-        List<TransactionEntity> transactions = transactionRepository.findByUserId(userId);
-        
-        if(transactions.isEmpty()) {
-        	SuccessResponse<Object> responseBody = new SuccessResponse<>(HttpStatus.OK.value(),"User has no recorded transactions.",transactions);
-        	return ResponseEntity.status(HttpStatus.OK).body(responseBody);
-        }
-        
-        List<TransactionResponseDTO> response = transactions.stream()
-                .map(transaction -> {
-                    TransactionResponseDTO dto = new TransactionResponseDTO();
-                    dto.setId(transaction.getId());
-                    dto.setTransactionType(transaction.getTransactionType());
-                    dto.setQuantity(transaction.getQuantity());
-                    dto.setPricePerUnit(transaction.getPricePerUnit());
-                    dto.setSubTotal(transaction.getSubTotal());
-                    dto.setTotalAmount(transaction.getTotalAmount());
-                    dto.setTimestamp(transaction.getTimestamp());
-                    
-                    //charges info
-                    dto.setBrokerage(transaction.getBrokerage());
-                    dto.setExchangeTxnCharges(transaction.getExchangeTxnCharges());
-                    dto.setStampDuty(transaction.getStampDuty());
-                    dto.setIpft(transaction.getIpft());
-                    dto.setSebiCharges(transaction.getSebiCharges());
-                    dto.setStt(transaction.getStt());
-                    dto.setGst(transaction.getGst());
-                    
-                    // Get stock info
-                    StockEntity stock = transaction.getStock();
-                    StockInfoDTO stockDto = new StockInfoDTO();
-                    
-                    stockDto.setName(stock.getName());
-                    stockDto.setSymbol(stock.getSymbol());
-                    stockDto.setImageUrl(stock.getImageUrl());
-                    stockDto.setCurrentPrice(stock.getCurrentPrice());
-                    stockDto.setSector(stock.getSector());
-                    
-                    // Set stock info in DTO
-                    dto.setStock(stockDto);
-                    
-                    return dto;
-                })
-                .collect(Collectors.toList());
-        
-        SuccessResponse<Object> responseBody = new SuccessResponse<>(HttpStatus.OK.value(), "Transactions fetched successfully", response);
-        return ResponseEntity.status(HttpStatus.OK).body(responseBody);
-    }
+//    @Override
+//    public ResponseEntity<?> getUserTransactions(Long userId) {
+//        List<TransactionEntity> transactions = transactionRepository.findByUserId(userId);
+//        
+//        if(transactions.isEmpty()) {
+//        	SuccessResponse<Object> responseBody = new SuccessResponse<>(HttpStatus.OK.value(),"User has no recorded transactions.",transactions);
+//        	return ResponseEntity.status(HttpStatus.OK).body(responseBody);
+//        }
+//        
+//        List<TransactionResponseDTO> response = transactions.stream()
+//                .map(transaction -> {
+//                    TransactionResponseDTO dto = new TransactionResponseDTO();
+//                    dto.setId(transaction.getId());
+//                    dto.setTransactionType(transaction.getTransactionType());
+//                    dto.setQuantity(transaction.getQuantity());
+//                    dto.setPricePerUnit(transaction.getPricePerUnit());
+//                    dto.setSubTotal(transaction.getSubTotal());
+//                    dto.setTotalAmount(transaction.getTotalAmount());
+//                    dto.setTimestamp(transaction.getTimestamp());
+//                    
+//                    //charges info
+//                    dto.setBrokerage(transaction.getBrokerage());
+//                    dto.setExchangeTxnCharges(transaction.getExchangeTxnCharges());
+//                    dto.setStampDuty(transaction.getStampDuty());
+//                    dto.setIpft(transaction.getIpft());
+//                    dto.setSebiCharges(transaction.getSebiCharges());
+//                    dto.setStt(transaction.getStt());
+//                    dto.setGst(transaction.getGst());
+//                    
+//                    // Get stock info
+//                    StockEntity stock = transaction.getStock();
+//                    StockInfoDTO stockDto = new StockInfoDTO();
+//                    
+//                    stockDto.setName(stock.getName());
+//                    stockDto.setSymbol(stock.getSymbol());
+//                    stockDto.setImageUrl(stock.getImageUrl());
+//                    stockDto.setCurrentPrice(stock.getCurrentPrice());
+//                    stockDto.setSector(stock.getSector());
+//                    
+//                    // Set stock info in DTO
+//                    dto.setStock(stockDto);
+//                    
+//                    return dto;
+//                })
+//                .collect(Collectors.toList());
+//        
+//        SuccessResponse<Object> responseBody = new SuccessResponse<>(HttpStatus.OK.value(), "Transactions fetched successfully", response);
+//        return ResponseEntity.status(HttpStatus.OK).body(responseBody);
+//    }
     
     @Override
-    public ResponseEntity<?> getUserTransactionsPaginated(Long userId, int page, int size) {
+    public ResponseEntity<?> getUserTransactionsPaginated(Long userId, int page, int size,String transactionType,String startDate, String endDate, String searchQuery) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
-        Page<TransactionEntity> transactionsPage = transactionRepository.findByUserId(userId, pageable);
+        Page<TransactionEntity> transactionsPage;
+        
+        //for date       
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
+        if (startDate != null && endDate != null) {
+        	
+        	//to remove that \n at last! trim it!
+            String trimmedStartDate = startDate.trim();
+            String trimmedEndDate = endDate.trim();
+            
+            start = LocalDate.parse(trimmedStartDate, formatter).atStartOfDay();
+            end = LocalDate.parse(trimmedEndDate, formatter).atTime(LocalTime.MAX);
+        }
+
+        if (start != null && end != null) {
+            if ("BUY".equalsIgnoreCase(transactionType)) {
+                transactionsPage = transactionRepository.findByUserIdAndTransactionTypeAndTimestampBetween(
+                        userId, "BUY", start, end, pageable);
+            } else if ("SELL".equalsIgnoreCase(transactionType)) {
+                transactionsPage = transactionRepository.findByUserIdAndTransactionTypeAndTimestampBetween(
+                        userId, "SELL", start, end, pageable);
+            } else {
+                transactionsPage = transactionRepository.findByUserIdAndTimestampBetween(
+                        userId, start, end, pageable);
+            }
+        } else {
+        	//for transaction type
+            if ("BUY".equalsIgnoreCase(transactionType)) {
+                transactionsPage = transactionRepository.findByUserIdAndTransactionType(userId, "BUY", pageable);
+            } else if ("SELL".equalsIgnoreCase(transactionType)) {
+                transactionsPage = transactionRepository.findByUserIdAndTransactionType(userId, "SELL", pageable);
+            } else {
+                transactionsPage = transactionRepository.findByUserId(userId, pageable);
+            }
+        }
 
         List<TransactionResponseDTO> transactionDTOs = transactionsPage.getContent().stream()
                 .map(transaction -> {

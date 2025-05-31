@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public interface UserService {
 	UserEntity registerUser(UserEntity user);
 	SuccessResponse<UserResponseDTO> loginUser(String email, String password,HttpServletResponse response);
-	boolean updateUserPassword(String email, String newPassword);
+	String updateUserPassword(String email, String newPassword);
 	Optional<?> updateUserDetails(String email, String fullName, String mobileNumber, LocalDate dateOfBirth);
 	Optional<UserProfileDto> updateBalance(String email, BigDecimal amount, String operation);
 }

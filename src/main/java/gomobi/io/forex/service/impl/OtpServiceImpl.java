@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import gomobi.io.forex.entity.OtpEntity;
+import gomobi.io.forex.enums.OtpPurpose;
 import gomobi.io.forex.repository.OtpRepository;
 import gomobi.io.forex.service.OtpService;
 import jakarta.transaction.Transactional;
@@ -45,12 +46,13 @@ public class OtpServiceImpl implements OtpService{
      * Stores a new OTP and overwrites any existing one for the email.
      */
     @Transactional
-    public void storeOtp(String email, String otpCode) {
+    public void storeOtp(String email, String otpCode,OtpPurpose purpose) {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         Timestamp expiresAt = new Timestamp(now.getTime() + OTP_EXPIRATION_TIME);
 
         // Remove any existing OTP record before creating a new one
-        otpRepository.deleteByEmail(email);
+//        otpRepository.deleteByEmail(email);
+        otpRepository.deleteByEmailAndPurpose(email,purpose);
 
         OtpEntity otp = new OtpEntity();
         otp.setEmail(email);
@@ -58,6 +60,7 @@ public class OtpServiceImpl implements OtpService{
         otp.setTimestamp(now);
         otp.setExpiresAt(expiresAt);
         otp.setVerified(false);
+        otp.setPurpose(purpose);
 
         otpRepository.save(otp);
     }
@@ -66,8 +69,10 @@ public class OtpServiceImpl implements OtpService{
      * Validates and marks OTP as verified if matched.
      */
     @Transactional
-    public boolean verifyOtp(String email, String enteredOtp) {
-        Optional<OtpEntity> record = otpRepository.findTopByEmailOrderByTimestampDesc(email);
+    public boolean verifyOtp(String email, String enteredOtp,OtpPurpose purpose) {
+//        Optional<OtpEntity> record = otpRepository.findTopByEmailOrderByTimestampDesc(email);
+        Optional<OtpEntity> record = otpRepository.findTopByEmailAndPurposeOrderByTimestampDesc(email,purpose);
+        
         if (record.isEmpty()) return false;
 
         OtpEntity otp = record.get();

@@ -22,15 +22,8 @@ public class HoldingServiceImpl implements HoldingService{
 	 }
 	 
 	 @Override
-	 public Page<HoldingEntity> getPaginatedHoldingsByUserId(Long userId, int page, int size) {
-		     Pageable pageable = PageRequest.of(page, size);
+	 public Page<HoldingEntity> getHoldingsByUserId(Long userId, Pageable pageable) {
 		     return holdingRepository.findByUserId(userId, pageable);
 	 }
-	 
-	 //admin only!
-	 @Override 
-	 public Page<HoldingEntity> getPaginatedHoldings(int page,int size){
-		 Pageable pageable = PageRequest.of(page,size);
-		 return holdingRepository.findAll(pageable);
-	 }
+
 }

@@ -1,11 +1,15 @@
 package gomobi.io.forex.controller;
 
 import java.math.BigDecimal;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -76,19 +80,22 @@ public class PortfolioController {
     @GetMapping("/holdings/paginated")
     public ResponseEntity<?> getPaginatedHoldings(@RequestParam int page,
                                                   @RequestParam int size,
-                                                  @RequestParam(required = false) Long userId) {
-        Page<HoldingEntity> holdingsPage;
+                                                  @RequestParam(required = false) Long userId,
+                                                  @RequestParam String sortBy,
+                                                  @RequestParam String sortOrder
+    											) {
+        Sort sort = sortOrder.equalsIgnoreCase("asc")? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+    	
+    	
+    	Page<HoldingEntity> holdingsPage;
 
         if (userId != null) {
             if (!userRepository.existsById(userId)) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
             }
-            //get all user holdings
-            holdingsPage = holdingService.getPaginatedHoldingsByUserId(userId, page, size);
-        } else {
-        	//get all holdings
-            holdingsPage = holdingService.getPaginatedHoldings(page, size);
-        }
+        } 
+        holdingsPage = holdingService.getHoldingsByUserId(userId, pageable);
 
         // Map HoldingEntity list to HoldingResponseDTO list
         List<HoldingResponseDTO> dtoList = holdingsPage.getContent().stream()
@@ -120,18 +127,23 @@ public class PortfolioController {
     }
 
     //Get Transactions
-    @GetMapping("/transactions/{userId}")
-    public ResponseEntity<?> getUserTransactions(@PathVariable Long userId) {
-        return portfolioService.getUserTransactions(userId);
-    }
-    
+//    @GetMapping("/transactions/{userId}")
+//    public ResponseEntity<?> getUserTransactions(@PathVariable Long userId) {
+//        return portfolioService.getUserTransactions(userId);
+//    }
+//    
     //Get paginated transactions
     @GetMapping("/transactions/paginated")
     public ResponseEntity<?> getUserTransactionsPaginated(
     		@RequestParam int page,
     		@RequestParam int size,
-    		@RequestParam Long userId){
-    	 return portfolioService.getUserTransactionsPaginated(userId,page,size);
+    		@RequestParam Long userId,
+    		@RequestParam(defaultValue = "ALL") String transactionType,
+    		@RequestParam(required = false) String startDate,
+    		@RequestParam(required = false) String endDate,
+    		@RequestParam(required = false) String searchQuery
+    		){
+    	 return portfolioService.getUserTransactionsPaginated(userId,page,size,transactionType,startDate,endDate,searchQuery);
     }
     
 

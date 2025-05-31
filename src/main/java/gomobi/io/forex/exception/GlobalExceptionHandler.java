@@ -5,12 +5,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import static gomobi.io.forex.exception.CustomExceptions.*;
+
 //makes the class a global exception handler for the application
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     // Exceptions thrown by me!
-    @ExceptionHandler({DuplicateEmailException.class, DuplicateUsernameException.class,IllegalArgumentException.class,InvalidCredentialsException.class})
+    @ExceptionHandler({
+    	CustomExceptions.DuplicateEmailException.class, 
+    	CustomExceptions.DuplicateUsernameException.class,
+    	CustomExceptions.IllegalArgumentException.class,
+    	CustomExceptions.InvalidCredentialsException.class
+    })
     public ResponseEntity<ErrorResponse> handleMultipleExceptions(Exception ex) {
 
         //ErrorResponse obj with status code, message, and timestamp

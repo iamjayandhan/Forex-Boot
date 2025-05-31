@@ -19,6 +19,5 @@ public interface HoldingRepository extends JpaRepository<HoldingEntity, Long> {
 
     Page<HoldingEntity> findByUserId(Long userId,Pageable pageable);
     
-    //get all holdings, for ADMIN only!
-    Page<HoldingEntity> findAll(Pageable pageable);
+    boolean existsByStockId(Long stockId);
 }

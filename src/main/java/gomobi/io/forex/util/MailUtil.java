@@ -51,6 +51,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
+import org.springframework.core.io.ClassPathResource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +61,7 @@ public class MailUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(MailUtil.class);
 
-    private static final String FROM_EMAIL = "jayandhan.r@gomobi.io";
+    private static final String FROM_EMAIL = "forexnotifications25@gmail.com";
     private static final String OTP_SUBJECT = "Your One-Time Password (OTP)";
 
     @Autowired
@@ -83,24 +85,27 @@ public class MailUtil {
                     "<html><body style='font-family: Arial, sans-serif;'>" +
                     "<div style='max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px;'>" +
                     "<div style='text-align: center;'>" +
-                    "<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Logo_TV_2015.png/320px-Logo_TV_2015.png' alt='GoMobi Logo' style='height: 50px; margin-bottom: 20px;'/>" +
+                    "<img src='cid:companyLogo' alt='Company Logo' style='height: 100px; margin-bottom: 20px;'/>" +
                     "<h2 style='color: #333;'>Your OTP Code</h2>" +
                     "</div>" +
                     "<p>Hello,</p>" +
-                    "<p>Thank you for using <strong>GoMobi Forex</strong>. Please use the following OTP to complete your verification:</p>" +
+                    "<p>Thank you for using <strong>Forex Trader</strong>. Please use the following OTP to complete your verification:</p>" +
                     "<div style='text-align: center; margin: 30px 0;'>" +
                     "<span style='font-size: 24px; font-weight: bold; color: #2E86C1;'>" + otp + "</span>" +
                     "</div>" +
                     "<p>This OTP is valid for <strong>10 minutes</strong>. Do not share it with anyone.</p>" +
                     "<hr>" +
                     "<p style='font-size: 12px; color: #888;'>If you did not request this, please ignore this email.</p>" +
-                    "<p style='font-size: 12px; color: #888;'>© 2025 GoMobi.io | All rights reserved.</p>" +
+                    "<p style='font-size: 12px; color: #888;'>© 2025 forexnotifications25 | All rights reserved.</p>" +
                     "</div></body></html>";
 
             helper.setTo(toEmail);
             helper.setSubject(OTP_SUBJECT);
             helper.setFrom(FROM_EMAIL);
             helper.setText(htmlContent, true); // true = HTML
+            
+            ClassPathResource image = new ClassPathResource("static/company.png");
+            helper.addInline("companyLogo", image);
 
             mailSender.send(message);
             logger.info("HTML OTP email sent to {}", toEmail);
