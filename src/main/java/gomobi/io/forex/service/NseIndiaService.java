@@ -1,20 +1,35 @@
 package gomobi.io.forex.service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gomobi.io.forex.model.IndexEquityInfo;
+import gomobi.io.forex.util.IndexEquityInfoMapper;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 @Service
 public class NseIndiaService {
 
     private final WebClient webClient;
     private final AtomicReference<String> cookies = new AtomicReference<>("");
     private final AtomicReference<String> userAgent = new AtomicReference<>("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36");
+
+    //for that candle api, we need stock info first. then we extract identifier!
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public NseIndiaService() {
         this.webClient = WebClient.builder()
@@ -64,7 +79,7 @@ public class NseIndiaService {
                     .onErrorResume(err -> refreshCookies().then(performNseRequest(urlPath)));
         }
     }
-
+    
     //Public methods (short, reusable, clean)
     
     //1. get stock info
@@ -91,18 +106,114 @@ public class NseIndiaService {
     	return safeRequest(url);
     }
     
-    //5. get gainers and losers of the specific index
-    public Mono<String> getTGL(String indexSymbol){
-    	String url = "/api/equity-stockIndices?index="+indexSymbol;
-    	System.out.println(url);
-    	return safeRequest(url);
-    }
-    
-    //6. get most active stocks
-    public Mono<String> getMostActiveEquities(String indexSymbol){
-    	String url = "/api/mostActive?index="+indexSymbol;
-    	return safeRequest(url);
-    }
-    
+    //5. get top gainers and losers
+    public Mono<String> getTopGainersAndLosers(String indexSymbol) {
+        String url = "/api/equity-stockIndices?index=" + indexSymbol;
 
+        return safeRequest(url)
+            .flatMap(responseBody -> {
+                try {
+                    JsonNode rootNode = objectMapper.readTree(responseBody);
+                    JsonNode dataNode = rootNode.path("data");
+
+                    if (!dataNode.isArray()) {
+                        return Mono.just("{\"error\":\"Invalid data format\"}");
+                    }
+
+                    // Convert JSON array to POJOs
+                    List<IndexEquityInfo> equities = Arrays.asList(
+                        objectMapper.treeToValue(dataNode, IndexEquityInfo[].class)
+                    );
+
+                    // Split into gainers and losers
+                    List<Map<String, Object>> gainers = equities.stream()
+                        .filter(e -> e.getPChange() > 0)
+                        .sorted((a, b) -> Double.compare(b.getPChange(), a.getPChange()))
+                        .map(IndexEquityInfoMapper::enrich)
+                        .toList();
+
+                    List<Map<String, Object>> losers = equities.stream()
+                        .filter(e -> e.getPChange() <= 0)
+                        .sorted((a, b) -> Double.compare(a.getPChange(), b.getPChange()))
+                        .map(IndexEquityInfoMapper::enrich)
+                        .toList();
+
+                    // Prepare final response map
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("gainers", gainers);
+                    result.put("losers", losers);
+
+                    // Convert back to JSON
+                    String json = objectMapper.writeValueAsString(result);
+                    return Mono.just(json);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return Mono.just("{\"error\":\"" + e.getMessage() + "\"}");
+                }
+            });
+    }
+    
+    // 6. Get most active stocks with sorting logic (volume + value)
+    public Mono<String> getMostActiveEquities(String indexSymbol) {
+        String url = "/api/equity-stockIndices?index=" + URLEncoder.encode(indexSymbol.toUpperCase(), StandardCharsets.UTF_8);
+
+        return safeRequest(url).flatMap(responseBody -> {
+            try {
+                JsonNode rootNode = objectMapper.readTree(responseBody);
+                JsonNode dataNode = rootNode.path("data");
+
+                if (!dataNode.isArray()) {
+                    return Mono.just("{\"error\":\"Invalid data format\"}");
+                }
+
+                List<IndexEquityInfo> equities = Arrays.asList(
+                    objectMapper.treeToValue(dataNode, IndexEquityInfo[].class)
+                );
+
+                // Sort and enrich
+                List<Map<String, Object>> byVolume = equities.stream()
+                    .sorted((a, b) -> Long.compare(b.getTotalTradedVolume(), a.getTotalTradedVolume()))
+                    .map(IndexEquityInfoMapper::enrich)
+                    .toList();
+
+                List<Map<String, Object>> byValue = equities.stream()
+                    .sorted((a, b) -> Double.compare(b.getTotalTradedValue(), a.getTotalTradedValue()))
+                    .map(IndexEquityInfoMapper::enrich)
+                    .toList();
+
+                Map<String, Object> responseMap = new HashMap<>();
+                responseMap.put("byVolume", byVolume);
+                responseMap.put("byValue", byValue);
+
+                String jsonResponse = objectMapper.writeValueAsString(responseMap);
+                return Mono.just(jsonResponse);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return Mono.just("{\"error\":\"" + e.getMessage() + "\"}");
+            }
+        });
+    }
+
+    
+    //7. get chart data
+    public Mono<String> getChartPoints(String symbol, boolean withPreopen){
+    return getEquityDetails(symbol)
+        .flatMap(jsonString -> {
+            try {
+                JsonNode root = objectMapper.readTree(jsonString);
+                String identifier = root.path("info").path("identifier").asText();
+
+                String url = "/api/chart-databyindex?index=" + identifier.toUpperCase();
+                if (withPreopen) {
+                    url += "&preopen=true";
+                }
+
+                return safeRequest(url);
+            } catch (Exception e) {
+                return Mono.error(new RuntimeException("Failed to parse JSON or extract identifier", e));
+            }
+        });
+    }
 }

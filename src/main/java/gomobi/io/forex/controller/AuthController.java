@@ -240,6 +240,13 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid email format."));
         }
+        
+        //check if the email is already used?
+        if(userRepository.existsByEmail(email)) {
+        	ErrorResponse responseBody = new ErrorResponse(HttpStatus.BAD_REQUEST.value(),"Email already in use.");
+        	return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
+        }
+        
 
         if (!otpService.canSendOtp(email)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)

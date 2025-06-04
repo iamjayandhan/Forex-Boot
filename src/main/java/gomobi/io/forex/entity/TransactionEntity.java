@@ -24,6 +24,9 @@ public class TransactionEntity {
 
     @Column(nullable = false)
     private String transactionType; // BUY or SELL
+    
+    @Column(nullable = false)
+    private String fpxTxnId;
 
     @Column(nullable = false)
     private int quantity;
@@ -66,6 +69,14 @@ public class TransactionEntity {
     }
 
     // Getters and Setters
+    
+    public String getFpxTxnId() {
+    	return fpxTxnId;
+    }
+    
+    public void setFpxTxnId(String fpxTxnId) {
+    	this.fpxTxnId = fpxTxnId;
+    }
 
     public Long getId() {
         return id;

@@ -48,6 +48,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/auth/**").authenticated()
                 
                 .requestMatchers("/api/portfilio/**").authenticated()
+                
+                .requestMatchers("/api/fpx/**").permitAll()
                 //.requestMatchers("/api/stocks/**").authenticated()
                 .anyRequest().permitAll() // /api/otp/sendOTP
             )

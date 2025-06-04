@@ -178,7 +178,7 @@ public class PortfolioServiceImpl implements PortfolioService {
             holdingRepository.save(holding);
         }
 
-     // Insert transaction
+        // Insert transaction
         TransactionEntity txn = new TransactionEntity();
         txn.setUser(user);
         txn.setStock(stock);
@@ -195,6 +195,9 @@ public class PortfolioServiceImpl implements PortfolioService {
         txn.setSebiCharges(sebiCharges);
         txn.setStt(stt);
         txn.setGst(gst);
+        
+        //fpx transaction id
+        txn.setFpxTxnId(dto.getTransactionId());
 
         // Total amount after adding all charges
         txn.setTotalAmount(backendTotal);
@@ -311,6 +314,9 @@ public class PortfolioServiceImpl implements PortfolioService {
         txn.setStt(stt);
         txn.setGst(gst);
         txn.setTotalAmount(total);
+        
+        //fpx transaction id
+        txn.setFpxTxnId("");
 
         // Save the transaction
         transactionRepository.save(txn);

@@ -11,7 +11,7 @@ import org.springframework.web.client.RestTemplate;
 @RestController
 @RequestMapping("/api/forex")
 public class ForexController {
-
+	
 	@Value("${twelvedata.api.key}")
 	String apiKey;
 	
