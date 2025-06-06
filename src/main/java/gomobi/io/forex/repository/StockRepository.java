@@ -42,5 +42,8 @@ public interface StockRepository extends JpaRepository<StockEntity, Long> {
     
     @Query("SELECT DISTINCT s.sector FROM StockEntity s WHERE s.sector IS NOT NULL")
     List<String> findAllDistinctSectors();
+    
+    //get all stock info via list of its id's
+    List<StockEntity> findByIdIn(List<Long> ids);
 }
 

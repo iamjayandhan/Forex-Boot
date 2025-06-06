@@ -50,6 +50,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/portfilio/**").authenticated()
                 
                 .requestMatchers("/api/fpx/**").permitAll()
+                
+                .requestMatchers("/api/watchlist/**").authenticated()
                 //.requestMatchers("/api/stocks/**").authenticated()
                 .anyRequest().permitAll() // /api/otp/sendOTP
             )

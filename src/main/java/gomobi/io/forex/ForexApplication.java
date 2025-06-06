@@ -11,5 +11,4 @@ public class ForexApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ForexApplication.class, args);
 	}
-
 }
