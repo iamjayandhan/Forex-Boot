@@ -9,7 +9,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +30,17 @@ import gomobi.io.forex.entity.HoldingEntity;
 import gomobi.io.forex.entity.StockEntity;
 import gomobi.io.forex.entity.TransactionEntity;
 import gomobi.io.forex.entity.UserEntity;
+import gomobi.io.forex.entity.WalletTransactionEntity;
+import gomobi.io.forex.enums.StatusEnum;
+import gomobi.io.forex.enums.TransactionReason;
+import gomobi.io.forex.enums.TransactionType;
 import gomobi.io.forex.exception.ErrorResponse;
 import gomobi.io.forex.repository.HoldingRepository;
+import gomobi.io.forex.repository.PendingOrderRepository;
 import gomobi.io.forex.repository.StockRepository;
 import gomobi.io.forex.repository.TransactionRepository;
 import gomobi.io.forex.repository.UserRepository;
+import gomobi.io.forex.repository.WalletTransactionRepository;
 import gomobi.io.forex.service.PortfolioService;
 import jakarta.transaction.Transactional;
 
@@ -53,6 +58,11 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+    
+    @Autowired
+    private WalletTransactionRepository walletTransactionRepository;
+    
+    @Autowired PendingOrderRepository pendingOrderRepository;
     
     @Override
     @Transactional
@@ -147,36 +157,44 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .body(new ErrorResponse(400, "Insufficient balance"));
         }
 
+        //massive changes BELOW!!
         // Update user balance
-        user.setBalance(user.getBalance().subtract(backendTotal));
-        userRepository.save(user);
+//        user.setBalance(user.getBalance().subtract(backendTotal));
+//        userRepository.save(user);
 
         // Update stock IPO quantity
-        stock.setIpoQty(stock.getIpoQty() - dto.getQuantity());
-        stockRepository.save(stock);
-
-        // Update or create holding
-        Optional<HoldingEntity> optionalHolding = holdingRepository.findByUserAndStock(user, stock);
-        if (optionalHolding.isPresent()) {
-            HoldingEntity holding = optionalHolding.get();
-            int oldQty = holding.getQuantity();
-            BigDecimal oldAvg = holding.getAvgPrice();
-
-            //new avg = ( oldAvg * oldQty ) + ( newPrice * qty) / oldQty + newQty
-            BigDecimal newAvg = oldAvg.multiply(BigDecimal.valueOf(oldQty))
-                    .add(pricePerUnit.multiply(quantity))
-                    .divide(BigDecimal.valueOf(oldQty + dto.getQuantity()), 2, RoundingMode.HALF_EVEN);
-            holding.setQuantity(oldQty + dto.getQuantity());
-            holding.setAvgPrice(newAvg);
-            holdingRepository.save(holding);
-        } else {
-            HoldingEntity holding = new HoldingEntity();
-            holding.setUser(user);
-            holding.setStock(stock);
-            holding.setQuantity(dto.getQuantity());
-            holding.setAvgPrice(pricePerUnit);
-            holdingRepository.save(holding);
+//        stock.setIpoQty(stock.getIpoQty() - dto.getQuantity());
+//        stockRepository.save(stock);
+        
+        if(difference.compareTo(new BigDecimal("0.01")) > 0) {
+            System.out.println("Total mismatch: Backend total " + backendTotal + " & Frontend total " + dto.getTotalAmount());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(400, "Total amount mismatch!"));
         }
+
+  
+//        // Update or create holding
+//        Optional<HoldingEntity> optionalHolding = holdingRepository.findByUserAndStock(user, stock);
+//        if (optionalHolding.isPresent()) {
+//            HoldingEntity holding = optionalHolding.get();
+//            int oldQty = holding.getQuantity();
+//            BigDecimal oldAvg = holding.getAvgPrice();
+//
+//            //new avg = ( oldAvg * oldQty ) + ( newPrice * qty) / oldQty + newQty
+//            BigDecimal newAvg = oldAvg.multiply(BigDecimal.valueOf(oldQty))
+//                    .add(pricePerUnit.multiply(quantity))
+//                    .divide(BigDecimal.valueOf(oldQty + dto.getQuantity()), 2, RoundingMode.HALF_EVEN);
+//            holding.setQuantity(oldQty + dto.getQuantity());
+//            holding.setAvgPrice(newAvg);
+//            holdingRepository.save(holding);
+//        } else {
+//            HoldingEntity holding = new HoldingEntity();
+//            holding.setUser(user);
+//            holding.setStock(stock);
+//            holding.setQuantity(dto.getQuantity());
+//            holding.setAvgPrice(pricePerUnit);
+//            holdingRepository.save(holding);
+//        }
 
         // Insert transaction
         TransactionEntity txn = new TransactionEntity();
@@ -195,6 +213,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         txn.setSebiCharges(sebiCharges);
         txn.setStt(stt);
         txn.setGst(gst);
+        txn.setStatus(StatusEnum.FAILURE);
         
         //fpx transaction id
         txn.setFpxTxnId(dto.getTransactionId());
@@ -205,7 +224,17 @@ public class PortfolioServiceImpl implements PortfolioService {
         // Save the transaction
         transactionRepository.save(txn);
 
-
+        
+        WalletTransactionEntity wtxn = new WalletTransactionEntity();
+        wtxn.setUser(user);
+        wtxn.setAmount(backendTotal);
+        wtxn.setBalance(user.getBalance());
+        wtxn.setStatus(StatusEnum.FAILURE);
+        wtxn.setTransactionType(TransactionType.WITHDRAW);
+        wtxn.setTransactionReason(TransactionReason.STOCK_PURCHASE);
+        
+        walletTransactionRepository.save(wtxn);
+        
         return ResponseEntity.ok(new SuccessResponse<>(200, "Stock purchased successfully"));
     }
 
@@ -432,23 +461,23 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         if (start != null && end != null) {
             if ("BUY".equalsIgnoreCase(transactionType)) {
-                transactionsPage = transactionRepository.findByUserIdAndTransactionTypeAndTimestampBetween(
-                        userId, "BUY", start, end, pageable);
+                transactionsPage = transactionRepository.findByUserIdAndTransactionTypeAndStatusAndTimestampBetween(
+                        userId, "BUY", start, end, pageable, StatusEnum.SUCCESS);
             } else if ("SELL".equalsIgnoreCase(transactionType)) {
-                transactionsPage = transactionRepository.findByUserIdAndTransactionTypeAndTimestampBetween(
-                        userId, "SELL", start, end, pageable);
+                transactionsPage = transactionRepository.findByUserIdAndTransactionTypeAndStatusAndTimestampBetween(
+                        userId, "SELL", start, end, pageable, StatusEnum.SUCCESS);
             } else {
-                transactionsPage = transactionRepository.findByUserIdAndTimestampBetween(
-                        userId, start, end, pageable);
+                transactionsPage = transactionRepository.findByUserIdAndStatusAndTimestampBetween(
+                        userId, start, end, pageable,StatusEnum.SUCCESS);
             }
         } else {
         	//for transaction type
             if ("BUY".equalsIgnoreCase(transactionType)) {
-                transactionsPage = transactionRepository.findByUserIdAndTransactionType(userId, "BUY", pageable);
+                transactionsPage = transactionRepository.findByUserIdAndTransactionTypeAndStatus(userId, "BUY", pageable,StatusEnum.SUCCESS);
             } else if ("SELL".equalsIgnoreCase(transactionType)) {
-                transactionsPage = transactionRepository.findByUserIdAndTransactionType(userId, "SELL", pageable);
+                transactionsPage = transactionRepository.findByUserIdAndTransactionTypeAndStatus(userId, "SELL", pageable,StatusEnum.SUCCESS);
             } else {
-                transactionsPage = transactionRepository.findByUserId(userId, pageable);
+                transactionsPage = transactionRepository.findByUserIdAndStatus(userId, pageable,StatusEnum.SUCCESS);
             }
         }
 

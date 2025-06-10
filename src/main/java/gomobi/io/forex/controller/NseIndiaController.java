@@ -25,9 +25,7 @@ public class NseIndiaController {
 	
 	 @Autowired
 	 private NseIndiaService nseIndiaService;
-	 
-	 private final ObjectMapper objectMapper = new ObjectMapper();
-	
+	 	
 	 //1. get stock info
 	 @GetMapping("/equity-details/{symbol}")
 	 public Mono<String> getEquityDetails(@PathVariable String symbol) {

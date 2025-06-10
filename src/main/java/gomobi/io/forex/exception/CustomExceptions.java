@@ -36,4 +36,10 @@ public class CustomExceptions extends RuntimeException{
 	        super(message);
 	    }
 	}
+	
+	public static class ResponseStatusException extends RuntimeException{
+		public ResponseStatusException(String message) {
+			super(message);
+		}
+	}
 }

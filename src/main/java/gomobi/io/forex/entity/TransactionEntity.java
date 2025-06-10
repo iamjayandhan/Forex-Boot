@@ -1,10 +1,22 @@
 package gomobi.io.forex.entity;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+
+import gomobi.io.forex.enums.StatusEnum;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "transactions")
@@ -62,6 +74,10 @@ public class TransactionEntity {
     private BigDecimal totalAmount; // subtotal + transaction fee + tax
 
     private Timestamp timestamp;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('FAILURE','SUCCESS') DEFAULT 'FAILURE'")
+    private StatusEnum status;
 
     @PrePersist
     public void onPrePersist() {
@@ -69,6 +85,14 @@ public class TransactionEntity {
     }
 
     // Getters and Setters
+    
+    public StatusEnum getStatus() {
+    	return status;
+    }
+    
+    public void setStatus(StatusEnum status) {
+    	this.status = status;
+    }
     
     public String getFpxTxnId() {
     	return fpxTxnId;

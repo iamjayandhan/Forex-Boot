@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+import gomobi.io.forex.enums.StatusEnum;
 import gomobi.io.forex.enums.TransactionReason;
 import gomobi.io.forex.enums.TransactionType;
 import jakarta.persistence.Column;
@@ -47,12 +48,25 @@ public class WalletTransactionEntity {
     
     private Timestamp timestamp;
     
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('FAILURE','SUCCESS') DEFAULT 'FAILURE'")
+    private StatusEnum status;
+
+    
     @PrePersist
     public void onPrePersist() {
         this.timestamp = Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
     }
     
     //getters and setters
+    
+    public StatusEnum getStatus() {
+    	return status;
+    }
+    
+    public void setStatus(StatusEnum status) {
+    	this.status = status;
+    }
     
     public Long getId() {
     	return id;    

@@ -17,6 +17,7 @@ import gomobi.io.forex.dto.SuccessResponse;
 import gomobi.io.forex.dto.WalletTransactionDTO;
 import gomobi.io.forex.entity.UserEntity;
 import gomobi.io.forex.entity.WalletTransactionEntity;
+import gomobi.io.forex.enums.StatusEnum;
 import gomobi.io.forex.repository.UserRepository;
 import gomobi.io.forex.repository.WalletTransactionRepository;
 import gomobi.io.forex.service.WalletTransactionService;
@@ -57,7 +58,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService{
 	@Override
 	public List<WalletTransactionEntity> getTransactionsByUserId(Long userId){
 
-        List<WalletTransactionEntity> transactions = walletTransactionRepository.findByUserId(userId);
+        List<WalletTransactionEntity> transactions = walletTransactionRepository.findByUserIdAndStatus(userId,StatusEnum.SUCCESS);
         return transactions;
 	}
 	
@@ -67,7 +68,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService{
             .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<WalletTransactionEntity> results =  walletTransactionRepository.findByUser(user, pageable);
+        Page<WalletTransactionEntity> results =  walletTransactionRepository.findByUserAndStatus(user, pageable,StatusEnum.SUCCESS);
                 
         List<WalletTransactionDTO> transactionDTOs = results.getContent().stream()
                 .map(entity -> new WalletTransactionDTO(
